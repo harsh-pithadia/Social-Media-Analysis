@@ -1,0 +1,142 @@
+---
+title: "Social Media Data - Midterm Prep "
+author: "hp621@scarletmail.rutgers.edu"
+date: "3/24/2023"
+output: html_document
+---
+```{r}
+library(readr)
+library(FactoMineR)
+library(ggfortify)
+library(psych)
+library(corrplot)
+library(devtools)
+library(readxl)
+library(factoextra)
+data <- read_excel("C:/Users/HARSH/Desktop/RU/SEM 2/MVA/Social Media/social_media_cleaned.xlsx")
+
+str(data)
+summary(data)
+```
+```{r}
+stddata <- scale(data[-1])
+stddata
+```
+```{r}
+datacov <- cov(data[-1])
+datacov
+
+# Formatting 
+datacov_rounded <- round(datacov, digits = 2)
+datacov_df <- as.data.frame(datacov_rounded)
+datacov_df
+```
+```{r}
+datamean <-  colMeans(data[-1])
+datamean
+```
+```{r}
+data_MD <- mahalanobis(data[-1], datamean, datacov)
+data_MD
+
+#My usage vs class
+data_MD[22]
+```
+
+```{r}
+# Lets plot correlation between columns
+cor.plot(data[-1])
+```
+```{r}
+#Lets identify outliers in our data
+boxplot(data[-1])
+```
+
+```{r}
+cor(data[-1])
+```
+```{r}
+data_pca <- prcomp(data[-1],scale. =TRUE)
+data_pca
+```
+```{r}
+summary(data_pca)
+```
+
+```{r}
+(eigen_data <- data_pca$sdev^2)
+plot(eigen_data, xlab = "Component number", ylab = "Component variance", type = "l", main = "Scree diagram")
+plot(eigen_data, type = "b", main="Scree Plot")
+abline(h=1,col="blue",lty=2)
+fviz_eig(data_pca, addlabels = TRUE)
+fviz_pca_var(data_pca,col.var = "cos2",
+             gradient.cols = c("#FFCC00", "#CC9933", "#660033", "#330033"),
+             repel = TRUE)
+```
+```{r}
+library(cluster)
+library(readr)
+library(factoextra)
+library(magrittr)
+library(NbClust)
+
+dist.data <- dist(stddata, method="euclidean")
+colnames(dist.data) <- rownames(dist.data)
+
+clusdata.nn <- hclust(dist.data, method = "single")
+
+options(repr.plot.width=10, repr.plot.height=6)  # Adjust the plot size as needed
+plot(as.dendrogram(clusdata.nn), ylab="Distance",
+     main="Dendrogram of all Users")
+```
+```{r}
+(kmeans2.data <- kmeans(stddata,4,nstart = 10))
+```
+```{r}
+gap_stat <- clusGap(stddata, FUN = kmeans, nstart = 10, K.max = 10, B = 50)
+
+fviz_gap_stat(gap_stat)
+```
+
+```{r}
+set.seed(123)
+## Perform K-means clustering
+km.res3 <- kmeans(stddata, 3, nstart = 25)  
+# Visualize clusters
+fviz_cluster(km.res3, data = stddata,  
+             ellipse.type = "convex",
+             palette = "jco",
+             ggtheme = theme_minimal())
+```
+
+```{r}
+set.seed(123)
+## Perform K-means clustering
+km.res5 <- kmeans(stddata, 5, nstart = 25)  
+# Visualize clusters
+fviz_cluster(km.res5, data = stddata,  
+             ellipse.type = "convex",
+             palette = "jco",
+             ggtheme = theme_minimal())
+
+res.hc <- stddata %>% scale() %>% dist(method = "euclidean") %>%
+  hclust(method = "ward.D2")  # Change matstd.data to your dataset
+
+# Visualize the Dendrogram
+fviz_dend(res.hc, k = 5,  # Cut in four groups
+          cex = 0.5,  # label size
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07", "pink"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect = TRUE)
+```
+
+```{r}
+fa.parallel(data[-1])
+```
+```{r}
+fit.pc <- principal(data[-1], nfactors=3, rotate="varimax")
+fit.pc
+fa.diagram(fit.pc)
+vss(data[-1])
+```
+
