@@ -1,0 +1,89 @@
+---
+title: "Social_Media_Multiple_Regression"
+author: "hp621@Scarletmail.rutgers.edu"
+date: "2024-11-04"
+output: html_document
+---
+
+```{r}
+library(readr)
+library(GGally)
+library(car)
+library(MASS)
+library(readxl)
+social_media_cleaned <- read_excel("C:/Users/HARSH/Desktop/RU/SEM 2/MVA/Social Media/social_media_cleaned.xlsx")
+
+```
+
+```{r}
+str(social_media_cleaned)
+summary(social_media_cleaned)
+```
+```{r}
+colnames(social_media_cleaned) <- c("Chr","IG","LI","SC","TW","WA","YT","OTT","RT","HYF")
+fitsocial <- lm(HYF~IG+LI+SC+TW+WA+YT+OTT+RT ,data = social_media_cleaned)
+summary(fitsocial)
+```
+
+```{r}
+coefficients(fitsocial)
+```
+```{r}
+ggpairs(data=social_media_cleaned[-1], title="Social Media Data")
+confint(fitsocial,level=0.95)
+fitted(fitsocial)
+residuals(fitsocial)
+```
+```{r}
+residuals(fitsocial)
+#Anova Table
+anova(fitsocial)
+vcov(fitsocial)
+cov2cor(vcov(fitsocial))
+temp <- influence.measures(fitsocial)
+temp
+plot(fitsocial)
+```
+```{r}
+library(gvlma)
+
+gvmodel <- gvlma(fitsocial)
+summary(gvmodel)
+
+fitsocial1 <- fitsocial
+fitsocial2 <- lm(HYF~IG+LI+SC+TW+WA+OTT+RT ,data = social_media_cleaned)
+```
+
+```{r}
+#anova
+
+anova(fitsocial1,fitsocial2)
+
+step <- stepAIC(fitsocial, direction="both")
+step$anova
+```
+
+```{r}
+library(leaps)
+leaps<-regsubsets(HYF~IG+LI+SC+TW+WA+YT+OTT+RT ,data = social_media_cleaned,nbest=10)
+leaps
+# view results
+plot(leaps)
+plot(leaps,scale="r2")
+plot(leaps,scale="bic")
+summary(leaps)
+```
+```{r}
+library(relaimpo)
+calc.relimp(fitsocial,type=c("lmg","last","first","pratt"),
+            rela=TRUE)
+```
+
+```{r}
+summary(fitsocial)
+
+predict.lm(fitsocial, data.frame(IG = 0.5, LI = 0.8, SC = 0.3,YT =0.9, TW = 0.6, WA = 0.7, OTT = 0.4, RT = 0.2))
+
+```
+
+#3
