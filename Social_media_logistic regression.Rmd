@@ -1,0 +1,91 @@
+---
+title: "R Notebook"
+output: html_document
+df_print: paged
+---
+```{r}
+library(ggplot2)
+library(cowplot)
+library(caret)
+library(e1071)
+library(pROC)
+library(readxl)
+social_media_cleaned <- read_excel("C:/Users/HARSH/Desktop/RU/SEM 2/MVA/Social Media/social_media_cleaned.xlsx")
+summary(social_media_cleaned)
+str(social_media_cleaned)
+
+```
+```{r}
+
+
+
+sapply(social_media_cleaned, function(x) any(is.na(x)))
+social_media_cleaned$Mood.Productivity <- as.factor(social_media_cleaned$Mood.Productivity)
+social_media_cleaned$Tired.waking.up.in.morning <- as.factor(social_media_cleaned$Tired.waking.up.in.morning)
+social_media_cleaned$Trouble.falling.asleep <- as.factor(social_media_cleaned$Trouble.falling.asleep)
+str(social_media_cleaned)
+```
+
+#1. Model Development
+```{r}
+logistic_simple1 <- glm(Tired.waking.up.in.morning ~ Instagram, data=social_media_cleaned, family="binomial")
+summary(logistic_simple1)
+```
+```{r}
+logistic_simple2 <- glm(Tired.waking.up.in.morning ~ LinkedIn, data=social_media_cleaned, family="binomial")
+summary(logistic_simple2)
+```
+
+Selecting logistic regression model 2 as my model, has lower AIC value. 
+
+
+```{r}
+logistic <- glm(Tired.waking.up.in.morning ~ ., data=social_media_cleaned, family="binomial")
+summary(logistic)
+```
+
+2) Model Acceptance 
+3) Residual Analysis and Prediction
+```{r}
+#let's  see what this logistic regression predicts
+predicted.data <- data.frame(probability.of.tiredwaking=logistic_simple2$fitted.values,LinkedIn=social_media_cleaned$LinkedIn)
+predicted.data
+
+#predicted.data <- data.frame(probability.of.ls=logistic$fitted.values,ls=loan_data$loan_status)
+predicted.data <- predicted.data[order(predicted.data$probability.of.tiredwaking, decreasing=FALSE),]
+predicted.data$rank <- 1:nrow(predicted.data)
+## Lastly, we can plot the predicted probabilities for each sample having
+## heart disease and color by whether or not they actually had heart disease
+ggplot(data=predicted.data, aes(x=rank, y=probability.of.tiredwaking)) + geom_point(aes(color=LinkedIn), alpha=1, shape=4, stroke=2) + xlab("Index") + ylab("Predicted probability of waking up tired")
+```
+
+
+5) Model Accuracy 
+```{r}
+library(caret)
+# Confusion matrix
+conf_mat <- table(Actual = ifelse(social_media_cleaned$Tired.waking.up.in.morning == "1", "Tired", "Not-tired"), Predicted = ifelse(logistic$fitted.values > 0.5, "Tired", "Not-tired"))
+print(conf_mat)
+
+# Calculate accuracy
+accuracy <- sum(diag(conf_mat)) / sum(conf_mat)
+print(paste("Accuracy:", accuracy))
+
+# Calculate precision
+precision <- posPredValue(conf_mat)
+print(paste("Precision:", precision))
+
+# Calculate recall
+recall <- conf_mat["Tired", "Tired"] / sum(conf_mat["Tired", ])
+print(paste("Recall:", recall))
+
+# ROC curve
+roc_obj <- roc(social_media_cleaned$LinkedIn, logistic$fitted.values)
+plot(roc_obj, xlab="False Positive Percentage", ylab="True Postive Percentage", legacy.axes=TRUE, col="#377eb8", lwd=4, percent=TRUE, print.auc=TRUE)
+```
+
+The accuracy of the model is ~86%, that is model correctly predicts whether a person feels tired or not while waking up in the morning. 
+
+The precision of the model is ~93% 
+
+AUC is 1, this means the model has excellent ability to distinguish between person feeling tired vs not tired. 
