@@ -1,0 +1,88 @@
+---
+title: "Social Media LDA"
+output: html_document
+df_print: paged
+---
+
+```{r}
+library(MASS)
+library(ggplot2)
+library(memisc)
+library(ROCR)
+library(dplyr)
+library(klaR)
+```
+```{r}
+library(readxl)
+social_media <- read_excel("C:/Users/HARSH/Desktop/RU/SEM 2/MVA/Social Media/social_media_cleaned.xlsx")
+
+str(social_media)
+summary(social_media)
+```
+```{r}
+social_media$Tired.waking.up.in.morning<- as.factor(social_media$Tired.waking.up.in.morning)
+
+str(social_media)
+```
+LDA Model with Train and Test Split
+Splitting the dataset into Training and Test
+
+```{r}
+set.seed(42)
+
+smp_size_raw <- floor(0.75 * nrow(social_media))
+
+train_ind_raw <- sample(nrow(social_media), size = smp_size_raw)
+
+#Creating Train and Test Data
+train_raw.df <- as.data.frame(social_media[train_ind_raw, ])
+test_raw.df <- as.data.frame(social_media[-train_ind_raw, ])
+```
+
+LDA Model
+
+```{r}
+sm_lda <- lda(formula = train_raw.df$Tired.waking.up.in.morning ~ ., data = train_raw.df)
+sm_lda
+```
+
+```{r}
+summary(sm_lda)
+```
+The above summary helps us examine the output of our LDA model.
+
+Residuals
+
+```{r}
+plot(sm_lda)
+```
+```{r}
+plot(sm_lda, col = as.integer(train_raw.df$Tired.waking.up.in.morning))
+```
+
+```{r}
+partimat(Tired.waking.up.in.morning ~ Instagram + LinkedIn + SnapChat + Twitter +  Reddit+ youtube+ OTT , data = train_raw.df, method = "lda")
+```
+Prediction
+```{r}
+
+sm.lda.predict <- predict(sm_lda, data = test_raw.df$Tired.waking.up.in.morning)
+sm.lda.predict$class
+```
+```{r}
+sm.lda.predict$x
+```
+Model Accuracy
+```{r}
+# Predict class labels for the test dataset
+predicted_labels <- predict(sm_lda, data = test_raw.df)$class
+
+# Calculate accuracy
+actual_labels <- test_raw.df$Tired_Morning
+accuracy <- mean(predicted_labels == actual_labels)
+
+cat("Accuracy:", accuracy, "\n")
+```
+As the model has an imbalanced dataset with majority data points under “Not Tired”, it may be difficult for the model to clearly distinguish between the two classes, which was also observed in the PAM diagram.
+Therefore, the AUC and the Accuracy of the model is also less NAN.
+Another observed pattern was that the application ‘Instagram’ had a higher impact on ‘Tired’. Whereas the other applications had a higher impact on ‘Not Tired’
